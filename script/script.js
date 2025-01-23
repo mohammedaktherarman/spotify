@@ -1,14 +1,18 @@
 import { clientId, clientSecret } from "../env/env.js";
 
+const URL = "https://accounts.spotify.com/authorize";
+const redirectUri = "http://127.0.0.1:5500/playlist.html";
+const scopes = "playlist-modify-private user-library-modify playlist-modify-public";
+
 let token = "";
 
 let botoCercar = document.getElementById("buscar");
 let botoEsborrar = document.getElementById("borrar");
+let botoPlaylist = document.getElementById("playlist");
 let entrada = document.getElementById("input");
 let missatge = document.getElementById("message");
 
-
-
+botoPlaylist.addEventListener("click", function() { autoritzar (); } )
 
 
 //funcio per obtenir el token d'acces de Spotify
@@ -37,7 +41,7 @@ function obtenirTokenSpotify(clientId, clientSecret) {
       botoCercar.disabled = false;
       botoEsborrar.disabled = false;
 
-      console.log("Token obtingut:", token);
+      console.log("token:", token);
     })
     .catch((error) => {
       console.error("Error obtenint el token:", error);
@@ -280,3 +284,15 @@ obtenirTokenSpotify(clientId, clientSecret);
 
 botoCercar.addEventListener("click", cercar);
 botoEsborrar.addEventListener("click", esborrarCerca);
+
+
+const autoritzar = function () {
+  const authUrl =
+    URL +
+    `?client_id=${clientId}` +
+    `&response_type=token` +
+    `&redirect_uri=${redirectUri}` +
+    `&scope=${scopes}`;
+
+  window.location.assign(authUrl);
+};
