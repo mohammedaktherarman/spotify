@@ -119,3 +119,113 @@ const deleteTrackFromPlaylist = async function (trackUri, playlistId) {
 };
 
 getUserPlaylists();
+
+
+const obtenerCancionesDesdeLocalStorage = async function () {
+    let trackIds = localStorage.getItem("selectedTracks");
+
+    if (!trackIds) {
+      document.getElementById("canciones-container").innerHTML = "No hi ha cançons guardades";
+      return;
+    }
+  
+  
+    trackIds = trackIds.split(";");
+  
+  
+    const url = `https://api.spotify.com/v1/tracks?ids=${trackIds.join(",")}`;
+  
+    try {
+    
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+  
+      const data = await response.json();
+      mostrarCancionesEnPantalla(data.tracks);
+    } catch (error) {
+      console.error("Error al obtener las canciones desde Spotify:", error);
+    }
+  };
+  
+  const mostrarCancionesEnPantalla = function (tracks) {
+    const cancionesContainer = document.getElementById("canciones-container");
+    cancionesContainer.innerHTML = "";
+  
+  
+    tracks.forEach((track) => {
+      const divCancion = document.createElement("div");
+      divCancion.classList.add("track-item");
+      divCancion.innerHTML = `
+        <span>${track.name} - ${track.artists[0].name}</span>
+        <button class="add-button" data-id="${track.id}" onclick="agregarCancionAPlaylist('${track.id}')">ADD</button>
+        <button class="del-button" data-id="${track.id}" onclick="eliminarCancionDeLocalStorage('${track.id}')">DEL</button>
+      `;
+      cancionesContainer.appendChild(divCancion);
+    });
+  };
+  
+ 
+  const agregarCancionAPlaylist = async function (trackId) {
+    const selectedPlayList = document.getElementById("playlist").value;
+  
+    if (!selectedPlayList) {
+      alert("Has de seleccionar una playlist");
+      return;
+    }
+  
+    const trackUri = `spotify:track:${trackId}`; 
+  
+    const url = `https://api.spotify.com/v1/playlists/${selectedPlayList}/tracks`;
+  
+    try {
+    
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          uris: [trackUri], 
+        }),
+      });
+  
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+  
+      alert("La cançó s'ha afegit correctament");
+  
+      eliminarCancionDeLocalStorage(trackId);
+  
+      obtenerCancionesDesdeLocalStorage();
+    } catch (error) {
+      console.error("Error al agregar la canción a la playlist:", error);
+    }
+  };
+  
+  const eliminarCancionDeLocalStorage = function (trackId) {
+    let trackIds = localStorage.getItem("selectedTracks"); 
+  
+    if (!trackIds) {
+      return;
+    }
+  
+    trackIds = trackIds.split(";");
+  
+    trackIds = trackIds.filter((id) => id !== trackId);
+  
+    localStorage.setItem("selectedTracks", trackIds.join(";"));
+  
+    obtenerCancionesDesdeLocalStorage();
+  };
+  
+  obtenerCancionesDesdeLocalStorage();
+  
