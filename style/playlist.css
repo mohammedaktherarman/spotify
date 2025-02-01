@@ -1,3 +1,20 @@
 body {
     background-color: rgb(172, 239, 172);
 }
+
+#playlists button {
+    display: block;
+    margin-top: 10px;
+}
+
+#tracks {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#canciones-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}

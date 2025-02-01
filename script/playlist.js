@@ -1,4 +1,5 @@
 let token = "";
+
 let selectedPlaylistId = null;
 
 function getToken() {
@@ -22,13 +23,13 @@ const getUserPlaylists = async function () {
         }
 
         const data = await response.json();
-        displayPlaylists(data.items); 
+        mostrarCancionesPlaylist(data.items); 
     } catch (error) {
         console.error("Error al obtener las playlists:", error);
     }
 };
 
-const displayPlaylists = function (playlists) {
+const mostrarCancionesPlaylist = function (playlists) {
     const playlistsContainer = document.getElementById("playlists");
     playlistsContainer.innerHTML = ''; 
 
@@ -38,13 +39,13 @@ const displayPlaylists = function (playlists) {
         playlistButton.classList.add("playlist-button");
         playlistButton.onclick = function () {
             selectedPlaylistId = playlist.id;
-            getPlaylistTracks(selectedPlaylistId);
+            obtenerCancionesPlaylist(selectedPlaylistId);
         };
         playlistsContainer.appendChild(playlistButton);
     });
 };
 
-const getPlaylistTracks = async function (playlistId) {
+const obtenerCancionesPlaylist = async function (playlistId) {
     const url = `https://api.spotify.com/v1/playlists/${playlistId}/tracks`;
     try {
         const response = await fetch(url, {
@@ -68,35 +69,41 @@ const getPlaylistTracks = async function (playlistId) {
             document.getElementById("mensaje").style.display = "block"; 
         } else {
             document.getElementById("mensaje").style.display = "none"; 
-            displayTracks(data.items, playlistId);
+            cancionesPlaylist(data.items, playlistId);
         }
     } catch (error) {
         console.error("Error al obtener las canciones:", error);
     }
 };
 
-const displayTracks = function (tracks, playlistId) {
+const cancionesPlaylist = function (tracks, playlistId) {
     const tracksContainer = document.getElementById("tracks");
 
     tracks.forEach(track => {
         const trackItem = document.createElement("div");
         trackItem.classList.add("track-item");
 
-        trackItem.innerHTML = `${track.track.name} - ${track.track.artists[0].name} 
-                               <button class="del-button" onclick="confirmDelete('${track.track.uri}', '${playlistId}', this)">DEL</button>`;
+        const addedAt = track.added_at; 
+        const formattedDate = new Date(addedAt).toLocaleString(); 
+
+        trackItem.innerHTML = `
+            ${track.track.name} - ${track.track.artists[0].name} 
+            <span class="added-date">${formattedDate}</span>
+            <button class="del-button" onclick="confirmDEL('${track.track.uri}', '${playlistId}', this)">DEL</button>
+        `;
         tracksContainer.appendChild(trackItem);
     });
 };
 
-const confirmDelete = function (trackUri, playlistId, button) {
-    const confirm = window.confirm("¿Estás seguro que quieres eliminar esta canción de la playlist?");
+const confirmDEL = function (trackUri, playlistId, button) {
+    const confirm = window.confirm("Estàs segur que vols eliminar la cançó de la playlist?");
     if (confirm) {
-        deleteTrackFromPlaylist(trackUri, playlistId);
+        playlistDEL(trackUri, playlistId);
         button.parentElement.remove();
     }
 };
 
-const deleteTrackFromPlaylist = async function (trackUri, playlistId) {
+const playlistDEL = async function (trackUri, playlistId) {
     const url = `https://api.spotify.com/v1/playlists/${playlistId}/tracks`; 
     try {
         const response = await fetch(url, {
@@ -122,7 +129,7 @@ const deleteTrackFromPlaylist = async function (trackUri, playlistId) {
 
 getUserPlaylists();
 
-const obtenerCancionesDesdeLocalStorage = async function () {
+const cancionesLocalStorage = async function () {
     let trackIds = localStorage.getItem("selectedTracks");
 
     if (!trackIds) {
@@ -148,13 +155,13 @@ const obtenerCancionesDesdeLocalStorage = async function () {
         }
 
         const data = await response.json();
-        mostrarCancionesEnPantalla(data.tracks);
+        mostrarCanciones(data.tracks);
     } catch (error) {
         console.error("Error al obtener las canciones desde Spotify:", error);
     }
 };
 
-const mostrarCancionesEnPantalla = function (tracks) {
+const mostrarCanciones = function (tracks) {
     const cancionesContainer = document.getElementById("canciones-container");
     cancionesContainer.innerHTML = "";
 
@@ -163,27 +170,24 @@ const mostrarCancionesEnPantalla = function (tracks) {
         divCancion.classList.add("track-item");
         divCancion.innerHTML = `
             <span>${track.name} - ${track.artists[0].name}</span>
-            <button class="add-button" data-id="${track.id}" onclick="agregarCancionAPlaylist('${track.id}')">ADD</button>
-            <button class="del-button" data-id="${track.id}" onclick="confirmarEliminacion('${track.id}')">DEL</button>
+            <button class="add-button" data-id="${track.id}" onclick="playlistADD('${track.id}')">ADD</button>
+            <button class="del-button" data-id="${track.id}" onclick="confirmacioDEL('${track.id}')">DEL</button>
         `;
         cancionesContainer.appendChild(divCancion);
     });
 };
 
-const agregarCancionAPlaylist = async function (trackId) {
+const playlistADD = async function (trackId) {
     if (!selectedPlaylistId) {
         alert("Has de seleccionar una playlist");
         return;
     }
 
-  
     const trackUri = `spotify:track:${trackId}`;
 
- 
     const url = `https://api.spotify.com/v1/playlists/${selectedPlaylistId}/tracks`;
 
     try {
-
         const response = await fetch(url, {
             method: "POST",
             headers: {
@@ -191,7 +195,7 @@ const agregarCancionAPlaylist = async function (trackId) {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                uris: [trackUri] 
+                uris: [trackUri]
             }),
         });
 
@@ -199,27 +203,25 @@ const agregarCancionAPlaylist = async function (trackId) {
             throw new Error(`Error ${response.status}: ${response.statusText}`);
         }
 
- 
-        alert("La cançó s'ha afegit correctament");
+        alert("Estàs segur que vols afegir la cançó a la playlist?");
 
-     
-        eliminarCancionDeLocalStorage(trackId);
+        LocalStorageDEL(trackId);
 
-    
-        obtenerCancionesDesdeLocalStorage();
+        obtenerCancionesPlaylist(selectedPlaylistId);
+
     } catch (error) {
         console.error("Error al agregar la canción a la playlist:", error);
     }
 };
 
-const confirmarEliminacion = function (trackId) {
+const confirmacioDEL = function (trackId) {
     const confirmacion = window.confirm("Estàs segur que vols eliminar la cançó de la llista de cançons guardades?");
     if (confirmacion) {
-        eliminarCancionDeLocalStorage(trackId);
+        LocalStorageDEL(trackId);
     }
 };
 
-const eliminarCancionDeLocalStorage = function (trackId) {
+const LocalStorageDEL = function (trackId) {
     let trackIds = localStorage.getItem("selectedTracks"); 
 
     if (!trackIds) {
@@ -232,7 +234,7 @@ const eliminarCancionDeLocalStorage = function (trackId) {
 
     localStorage.setItem("selectedTracks", trackIds.join(";"));
 
-    obtenerCancionesDesdeLocalStorage();
+    cancionesLocalStorage();
 };
 
-obtenerCancionesDesdeLocalStorage();
+cancionesLocalStorage();
